@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compras Gerencia 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b12;--s1:#0f1320;--s2:#161c2e;--s3:#1d2440;--s4:#242b4a;
+  --b1:#252d4a;--b2:#2f3960;--txt:#dde2f5;--txt2:#8892b8;--txt3:#4a5480;
+  --acc:#5b8dee;--acc2:#7aa5f5;--acc3:#3d6fd4;
+  --red:#e8455a;--red2:#ff6b7d;--red3:rgba(232,69,90,.12);
+  --ora:#e8823a;--ora2:#ffaa6b;--ora3:rgba(232,130,58,.12);
+  --yel:#d4a835;--yel2:#f0c84a;--yel3:rgba(212,168,53,.12);
+  --grn:#2ec27e;--grn2:#56e0a0;--grn3:rgba(46,194,126,.12);
+  --pur:#8b5cf6;--pur2:#a78bfa;
+  --r:10px;--r2:7px;--shd:0 8px 32px rgba(0,0,0,.5);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* SETUP SCREEN */
+#setup-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.setup-box{
+  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
+  padding:36px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.6);
+}
+.setup-logo{font-size:36px;margin-bottom:12px}
+.setup-title{font-size:22px;font-weight:800;margin-bottom:6px}
+.setup-sub{font-size:13px;color:var(--txt3);margin-bottom:28px;line-height:1.6}
+.setup-label{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:block}
+.setup-input{
+  width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);
+  padding:10px 13px;color:var(--txt);font-size:13px;font-family:'Syne',sans-serif;
+  outline:none;margin-bottom:14px;transition:border-color .18s;
+}
+.setup-input:focus{border-color:var(--acc)}
+.setup-hint{font-size:11px;color:var(--txt3);margin-bottom:20px;line-height:1.6;background:var(--s2);padding:10px 12px;border-radius:var(--r2);border-left:3px solid var(--acc)}
+.setup-btn{
+  width:100%;padding:11px;background:var(--acc);color:#fff;border:none;
+  border-radius:var(--r2);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .18s;
+}
+.setup-btn:hover{background:var(--acc2)}
+.setup-err{font-size:12px;color:var(--red2);margin-top:8px;display:none}
+.setup-spinner{display:none;text-align:center;padding:10px;color:var(--txt3);font-size:12px}
+
+/* HEADER */
+.hdr{
+  background:linear-gradient(90deg,#0a0e1a,#0f1528);
+  border-bottom:1px solid var(--b1);padding:0 26px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;backdrop-filter:blur(12px);
+}
+.hdr-brand{display:flex;align-items:center;gap:12px}
+.hdr-logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--pur));display:flex;align-items:center;justify-content:center;font-size:17px}
+.hdr-name{font-size:15px;font-weight:800;letter-spacing:-.3px}
+.hdr-tag{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--grn);display:inline-block;margin-right:4px}
+.sync-dot.syncing{background:var(--yel2);animation:pulse 1s infinite}
+.sync-dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r2);border:none;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap}
+.btn-p{background:var(--acc);color:#fff}
+.btn-p:hover{background:var(--acc2);transform:translateY(-1px)}
+.btn-g{background:var(--s2);color:var(--txt2);border:1px solid var(--b1)}
+.btn-g:hover{background:var(--s3);color:var(--txt)}
+.btn-grn{background:var(--grn3);color:var(--grn2);border:1px solid rgba(46,194,126,.3)}
+.btn-grn:hover{background:rgba(46,194,126,.2)}
+
+/* TABS */
+.tabs{background:var(--s1);border-bottom:1px solid var(--b1);padding:0 26px;display:flex;gap:2px;overflow-x:auto}
+.tab{padding:13px 18px;font-size:12px;font-weight:600;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;white-space:nowrap;letter-spacing:.2px}
+.tab:hover{color:var(--txt2)}
+.tab.on{color:var(--acc2);border-bottom-color:var(--acc)}
+
+/* LAYOUT */
+.page{display:none;padding:22px 26px}
+.page.on{display:block}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:22px}
+.kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;transition:all .2s}
+.kpi:hover{border-color:var(--b2);transform:translateY(-2px)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--kc,var(--acc))}
+.kpi-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.kpi-val{font-size:34px;font-weight:800;color:var(--kc,var(--txt));line-height:1}
+.kpi-sub{font-size:10px;color:var(--txt3);margin-top:3px}
+.kpi-icon{position:absolute;right:14px;top:14px;font-size:22px;opacity:.2}
+
+/* ALERTS */
+.alert-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.alert-hdr h3{font-size:14px;font-weight:700}
+.badge{background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;font-family:'JetBrains Mono',monospace}
+.al-list{display:flex;flex-direction:column;gap:7px;margin-bottom:22px}
+.al{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:11px 14px;display:flex;align-items:center;gap:10px;border-left:3px solid var(--red);cursor:pointer;transition:all .18s}
+.al:hover{background:var(--s2)}
+.al.warn{border-left-color:var(--ora)}
+.al-pulse{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 1.8s infinite}
+.al.warn .al-pulse{background:var(--ora);animation:none}
+.al-body{flex:1;min-width:0}
+.al-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.al-meta{font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.al-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.al-days{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--txt3)}
+.edit-btn{padding:3px 9px;border-radius:5px;border:1px solid rgba(232,69,90,.35);background:var(--red3);color:var(--red2);font-size:10px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;white-space:nowrap;transition:all .15s}
+.al.warn .edit-btn{border-color:rgba(232,130,58,.35);background:var(--ora3);color:var(--ora2)}
+
+/* CHARTS */
+.charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+.chart-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.chart-box h4{font-size:12px;color:var(--txt2);margin-bottom:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.chart-wrap{position:relative;height:190px}
+
+/* KANBAN */
+.kb-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.fi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:7px 12px;color:var(--txt);font-size:12px;font-family:'Syne',sans-serif;outline:none;transition:border-color .18s}
+.fi:focus{border-color:var(--acc)}
+.fi::placeholder{color:var(--txt3)}
+.fi-grow{flex:1;min-width:180px}
+.kb{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+.kb-col{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden}
+.kb-head{padding:11px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:8px}
+.kb-dot{width:7px;height:7px;border-radius:50%}
+.kb-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.kb-cnt{margin-left:auto;font-size:9px;font-family:'JetBrains Mono',monospace;background:var(--s3);padding:2px 7px;border-radius:8px;color:var(--txt2)}
+.kb-body{padding:10px;display:flex;flex-direction:column;gap:7px;min-height:80px;max-height:420px;overflow-y:auto}
+.kb-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:9px 11px;cursor:pointer;transition:all .18s}
+.kb-card:hover{border-color:var(--b2);transform:translateY(-1px);box-shadow:var(--shd)}
+.kb-card-title{font-size:11.5px;font-weight:600;line-height:1.4;margin-bottom:6px}
+.kb-card-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.tag{font-size:9.5px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:500}
+.t-red{background:rgba(232,69,90,.2);color:var(--red2)}
+.t-ora{background:rgba(232,130,58,.18);color:var(--ora2)}
+.t-yel{background:rgba(212,168,53,.18);color:var(--yel2)}
+.t-blu{background:rgba(91,141,238,.18);color:var(--acc2)}
+.t-grn{background:rgba(46,194,126,.18);color:var(--grn2)}
+.t-gry{background:var(--s3);color:var(--txt3)}
+.t-pur{background:rgba(139,92,246,.18);color:var(--pur2)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--b1);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--s2)}
+th{padding:10px 13px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--txt3);border-bottom:1px solid var(--b1);white-space:nowrap}
+td{padding:9px 13px;border-bottom:1px solid var(--b1);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .12s;cursor:pointer}
+tbody tr:hover{background:var(--s2)}
+.td-desc{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-act{display:flex;gap:5px}
+.ic-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--b1);background:var(--s2);color:var(--txt2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ic-btn:hover{background:var(--s3);color:var(--txt)}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.pag-info{font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace}
+.pag-btns{display:flex;gap:3px}
+.pg{width:28px;height:28px;border-radius:5px;border:1px solid var(--b1);background:var(--s2);color:var(--txt2);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pg:hover{background:var(--s3)}
+.pg.on{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* COMPLETADOS */
+.completados-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.completados-filters{display:flex;gap:8px;flex-wrap:wrap}
+.month-group{margin-bottom:24px}
+.month-title{font-size:13px;font-weight:700;color:var(--acc2);margin-bottom:10px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.5px}
+.month-count{font-size:10px;background:var(--s3);padding:2px 8px;border-radius:8px;color:var(--txt3)}
+
+/* CALENDAR */
+.cal-wrap{display:grid;grid-template-columns:1fr 300px;gap:16px}
+.cal-main{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-month{font-size:17px;font-weight:800}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dn{text-align:center;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--txt3);padding:4px 2px;text-transform:uppercase}
+.cal-day{min-height:72px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:5px;cursor:pointer;transition:all .15s}
+.cal-day:hover{border-color:var(--b2);background:var(--s3)}
+.cal-day.today{border-color:var(--acc);background:rgba(91,141,238,.08)}
+.cal-day.other{opacity:.3}
+.cal-day.has-urgent{border-color:rgba(232,69,90,.5)!important}
+.cal-num{font-size:11px;font-weight:700;margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.today .cal-num{color:var(--acc2)}
+.cal-evts{display:flex;flex-direction:column;gap:2px}
+.cev{font-size:9px;padding:1.5px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cev-urg{background:rgba(232,69,90,.28);color:var(--red2)}
+.cev-pen{background:rgba(232,130,58,.2);color:var(--ora2)}
+.cev-pro{background:rgba(91,141,238,.2);color:var(--acc2)}
+.cev-done{background:rgba(46,194,126,.15);color:var(--grn2)}
+.cev-cust{background:rgba(139,92,246,.2);color:var(--pur2)}
+.cal-more{font-size:8.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace}
+.cal-sidebar{display:flex;flex-direction:column;gap:12px}
+.side-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px}
+.side-card h4{font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.up-item{padding:8px 0;border-bottom:1px solid var(--b1);display:flex;gap:8px}
+.up-item:last-child{border-bottom:none}
+.up-date{font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--txt3);white-space:nowrap;padding-top:1px}
+.up-txt{font-size:11.5px;line-height:1.4;font-weight:600}
+.up-type{font-size:9px;color:var(--txt3);margin-top:2px}
+
+/* MODAL */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.ov.open{display:flex}
+.mdl{background:var(--s1);border:1px solid var(--b2);border-radius:14px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 32px 100px rgba(0,0,0,.7)}
+.mdl-hdr{padding:18px 22px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.mdl-title{font-size:15px;font-weight:800}
+.mdl-x{width:30px;height:30px;border-radius:6px;background:var(--s2);border:1px solid var(--b1);color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.mdl-x:hover{background:var(--s3);color:var(--txt)}
+.mdl-body{padding:18px 22px}
+.mdl-foot{padding:14px 22px;border-top:1px solid var(--b1);display:flex;justify-content:flex-end;gap:8px}
+.prog-steps{display:flex;align-items:center;margin-bottom:20px}
+.ps{display:flex;flex-direction:column;align-items:center;flex:1}
+.ps-c{width:26px;height:26px;border-radius:50%;border:2px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--txt3);transition:all .25s;z-index:1}
+.ps.done .ps-c{background:var(--grn);border-color:var(--grn2);color:#000}
+.ps.act .ps-c{background:var(--acc);border-color:var(--acc2);color:#fff}
+.ps-lbl{font-size:8.5px;color:var(--txt3);margin-top:3px;text-align:center;white-space:nowrap}
+.ps.act .ps-lbl{color:var(--acc2)}
+.ps.done .ps-lbl{color:var(--grn2)}
+.ps-line{flex:1;height:2px;background:var(--b1);margin-top:-16px}
+.ps-line.done{background:var(--grn)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.frow.full{grid-template-columns:1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.fc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:8px 11px;color:var(--txt);font-size:12px;font-family:'Syne',sans-serif;outline:none;transition:border-color .18s;width:100%}
+.fc:focus{border-color:var(--acc)}
+.fc option{background:var(--s2)}
+textarea.fc{resize:vertical;min-height:70px}
+.mdl-step{display:none}
+.mdl-step.on{display:block}
+.empty{text-align:center;padding:32px;color:var(--txt3)}
+.empty-i{font-size:32px;margin-bottom:8px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+@media(max-width:768px){.charts-2,.cal-wrap{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}.page{padding:14px}}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP SCREEN ═══ -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <div class="setup-logo">🔐</div>
+    <div class="setup-title">Configurar almacenamiento</div>
+    <div class="setup-sub">Para guardar los datos online necesitas un <strong>GitHub Token</strong>. Solo se configura una vez y queda guardado en tu navegador.</div>
+
+    <div class="setup-hint">
+      📋 <strong>Cómo obtener tu token:</strong><br>
+      1. Ve a <strong>github.com → Settings → Developer settings</strong><br>
+      2. Clic en <strong>Personal access tokens → Tokens (classic)</strong><br>
+      3. <strong>Generate new token (classic)</strong><br>
+      4. Escribe un nombre (ej: "compras"), marca solo el permiso <strong>gist</strong><br>
+      5. Clic en <strong>Generate token</strong> y cópialo aquí
+    </div>
+
+    <label class="setup-label">Tu GitHub Token</label>
+    <input class="setup-input" type="password" id="setup-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+
+    <label class="setup-label">ID del Gist (opcional — dejar vacío la primera vez)</label>
+    <input class="setup-input" type="text" id="setup-gist" placeholder="Se creará automáticamente">
+
+    <div class="setup-hint" style="border-left-color:var(--grn)">
+      🔒 Tu token se guarda solo en <strong>este navegador</strong>, nunca se envía a ningún servidor externo salvo GitHub.
+    </div>
+
+    <button class="setup-btn" onclick="setupConnect()">Conectar y continuar →</button>
+    <div class="setup-err" id="setup-err"></div>
+    <div class="setup-spinner" id="setup-spin">⏳ Conectando con GitHub...</div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none">
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <div class="hdr-logo">📦</div>
+    <div>
+      <div class="hdr-name">Compras Gerencia</div>
+      <div class="hdr-tag mono">2026 · ONLINE</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:4px">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-label">Sincronizado</span>
+    </span>
+    <label class="btn btn-g" style="cursor:pointer">
+      📂 Cargar Excel
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="loadExcel(this)">
+    </label>
+    <button class="btn btn-p" onclick="openNew()">＋ Nueva</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab on"  onclick="goTab('overview',this)">📊 Resumen</div>
+  <div class="tab" onclick="goTab('kanban',this)">🗂 Kanban</div>
+  <div class="tab" onclick="goTab('table',this)">📋 Listado</div>
+  <div class="tab" onclick="goTab('completados',this)">✅ Completados</div>
+  <div class="tab" onclick="goTab('calendar',this)">📅 Calendario</div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page on" id="pg-overview">
+  <div class="kpi-row">
+    <div class="kpi" style="--kc:var(--acc)"><div class="kpi-icon">📦</div><div class="kpi-lbl">Total 2026</div><div class="kpi-val" id="k-total">0</div><div class="kpi-sub">Solicitudes</div></div>
+    <div class="kpi" style="--kc:var(--red)"><div class="kpi-icon">🚨</div><div class="kpi-lbl">Urgentes</div><div class="kpi-val" id="k-urg">0</div><div class="kpi-sub">Atención inmediata</div></div>
+    <div class="kpi" style="--kc:var(--yel)"><div class="kpi-icon">⏸</div><div class="kpi-lbl">Retenidas</div><div class="kpi-val" id="k-ret">0</div><div class="kpi-sub">Esperando presupuesto</div></div>
+    <div class="kpi" style="--kc:var(--ora)"><div class="kpi-icon">🕐</div><div class="kpi-lbl">Pendientes</div><div class="kpi-val" id="k-pen">0</div><div class="kpi-sub">Sin gestionar</div></div>
+    <div class="kpi" style="--kc:var(--acc2)"><div class="kpi-icon">⚡</div><div class="kpi-lbl">En Proceso</div><div class="kpi-val" id="k-pro">0</div><div class="kpi-sub">En gestión</div></div>
+    <div class="kpi" style="--kc:var(--grn)"><div class="kpi-icon">✅</div><div class="kpi-lbl">Completadas</div><div class="kpi-val" id="k-done">0</div><div class="kpi-sub">Finalizadas</div></div>
+  </div>
+  <div class="alert-hdr"><h3>🚨 Alertas Activas</h3><span class="badge" id="al-cnt">0</span></div>
+  <div class="al-list" id="al-list"></div>
+  <div class="charts-2">
+    <div class="chart-box"><h4>Por Estado</h4><div class="chart-wrap"><canvas id="ch-status"></canvas></div></div>
+    <div class="chart-box"><h4>Solicitudes por Mes 2026</h4><div class="chart-wrap"><canvas id="ch-month"></canvas></div></div>
+  </div>
+</div>
+
+<!-- KANBAN -->
+<div class="page hidden" id="pg-kanban">
+  <div class="kb-filters">
+    <input class="fi fi-grow" placeholder="🔍 Buscar..." id="kb-q" oninput="renderKanban()">
+    <select class="fi" id="kb-pri" onchange="renderKanban()">
+      <option value="">Todas las prioridades</option>
+      <option>URGENTE</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option>
+    </select>
+    <button class="btn btn-p" onclick="openNew()">＋ Nueva</button>
+  </div>
+  <div class="kb" id="kb-board"></div>
+</div>
+
+<!-- TABLE -->
+<div class="page hidden" id="pg-table">
+  <div class="kb-filters">
+    <input class="fi fi-grow" placeholder="🔍 Buscar..." id="tq" oninput="filterTable()">
+    <select class="fi" id="t-est" onchange="filterTable()">
+      <option value="">Todos los estados</option>
+      <option>URGENTE</option><option>RETENIDO-PRESUPUESTO</option><option>PENDIENTE</option>
+      <option>EN PROCESO</option><option>COMPLETADO</option>
+    </select>
+    <select class="fi" id="t-pri" onchange="filterTable()">
+      <option value="">Todas las prioridades</option>
+      <option>URGENTE</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option>
+    </select>
+    <button class="btn btn-g" onclick="clearTbl()">✕</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Fecha</th><th>SOLPED</th><th>Descripción</th>
+        <th>Proveedor</th><th>Prioridad</th><th>Estado</th><th>Pedido</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+  <div class="pag"><div class="pag-info mono" id="pag-info"></div><div class="pag-btns" id="pag-btns"></div></div>
+</div>
+
+<!-- COMPLETADOS -->
+<div class="page hidden" id="pg-completados">
+  <div class="completados-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:15px;font-weight:800">Solicitudes Completadas</div>
+      <span class="badge" style="background:var(--grn)" id="done-total">0</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input class="fi" placeholder="🔍 Buscar..." id="dq" oninput="renderCompletados()" style="width:200px">
+      <select class="fi" id="d-mes" onchange="renderCompletados()">
+        <option value="">Todos los meses</option>
+        <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+        <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+        <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+      <button class="btn btn-grn" onclick="exportCompletados()">⬇ Descargar Excel</button>
+    </div>
+  </div>
+  <div id="completados-list"></div>
+</div>
+
+<!-- CALENDAR -->
+<div class="page hidden" id="pg-calendar">
+  <div class="cal-wrap">
+    <div class="cal-main">
+      <div class="cal-nav-row">
+        <button class="btn btn-g" onclick="calNav(-1)">‹</button>
+        <div class="cal-month" id="cal-ttl"></div>
+        <button class="btn btn-g" onclick="calNav(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div class="cal-sidebar">
+      <div class="side-card">
+        <h4>📌 Próximos eventos</h4>
+        <div id="upcoming"></div>
+      </div>
+      <div class="side-card">
+        <h4>➕ Agregar actividad</h4>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div class="fg"><label class="fl">Título</label><input class="fc" id="act-ttl" placeholder="Reunión, seguimiento..."></div>
+          <div class="fg"><label class="fl">Fecha</label><input class="fc" type="date" id="act-date"></div>
+          <div class="fg">
+            <label class="fl">Tipo</label>
+            <select class="fc" id="act-type">
+              <option value="task">📋 Tarea interna</option>
+              <option value="cust">🟣 Actividad personal</option>
+              <option value="urg">🔴 Urgente</option>
+            </select>
+          </div>
+          <button class="btn btn-p" style="width:100%" onclick="addActivity()">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
+<!-- MODAL -->
+<div class="ov" id="mdl-sol">
+  <div class="mdl">
+    <div class="mdl-hdr">
+      <div class="mdl-title" id="mdl-ttl">Nueva Solicitud</div>
+      <button class="mdl-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mdl-body">
+      <div class="prog-steps">
+        <div class="ps act" id="si1"><div class="ps-c">1</div><div class="ps-lbl">Básico</div></div>
+        <div class="ps-line" id="sl1"></div>
+        <div class="ps" id="si2"><div class="ps-c">2</div><div class="ps-lbl">Prioridad</div></div>
+        <div class="ps-line" id="sl2"></div>
+        <div class="ps" id="si3"><div class="ps-c">3</div><div class="ps-lbl">Gestión</div></div>
+        <div class="ps-line" id="sl3"></div>
+        <div class="ps" id="si4"><div class="ps-c">4</div><div class="ps-lbl">Completar</div></div>
+      </div>
+      <div class="mdl-step on" id="mst1">
+        <div class="frow">
+          <div class="fg"><label class="fl">Fecha</label><input class="fc" type="date" id="f-fecha"></div>
+          <div class="fg"><label class="fl">SOLPED</label><input class="fc" id="f-solped" placeholder="Nro. SOLPED"></div>
+        </div>
+        <div class="frow full">
+          <div class="fg"><label class="fl">Descripción / Compra</label><textarea class="fc" id="f-desc" placeholder="Describe el artículo o servicio..."></textarea></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Proveedor</label><input class="fc" id="f-prov" placeholder="Nombre del proveedor"></div>
+          <div class="fg"><label class="fl"># Caso Mesa Servicios</label><input class="fc" id="f-caso" placeholder="Nro. caso"></div>
+        </div>
+      </div>
+      <div class="mdl-step" id="mst2">
+        <div class="frow">
+          <div class="fg"><label class="fl">Prioridad</label>
+            <select class="fc" id="f-pri"><option value="URGENTE">🔴 Urgente</option><option value="ALTA">🟠 Alta</option><option value="MEDIA" selected>🟡 Media</option><option value="BAJA">🟢 Baja</option></select>
+          </div>
+          <div class="fg"><label class="fl">Estado</label>
+            <select class="fc" id="f-est"><option value="PENDIENTE">Pendiente</option><option value="URGENTE">Urgente</option><option value="EN PROCESO">En Proceso</option><option value="RETENIDO-PRESUPUESTO">Retenido - Presupuesto</option><option value="NUEVO">Nuevo</option><option value="COMPLETADO">Completado</option></select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Valor ($)</label><input class="fc" type="number" id="f-valor" placeholder="0"></div>
+          <div class="fg"><label class="fl">Único Proveedor</label><select class="fc" id="f-unico"><option value="">No</option><option value="SI">Sí</option></select></div>
+        </div>
+        <div class="frow full">
+          <div class="fg"><label class="fl">Observación</label><textarea class="fc" id="f-obs" placeholder="Notas, justificación..."></textarea></div>
+        </div>
+      </div>
+      <div class="mdl-step" id="mst3">
+        <div class="frow">
+          <div class="fg"><label class="fl">Nro. Pedido</label><input class="fc" id="f-pedido" placeholder="Nro. pedido SAP"></div>
+          <div class="fg"><label class="fl">EM 1</label><input class="fc" id="f-em1" placeholder="Entrada de mercancía 1"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">EM 2</label><input class="fc" id="f-em2" placeholder="Entrada de mercancía 2"></div>
+          <div class="fg"><label class="fl">No. Carpeta Compras</label><input class="fc" id="f-carpeta" placeholder="Nro. carpeta"></div>
+        </div>
+        <div class="frow full">
+          <div class="fg"><label class="fl">CASO cierre</label><input class="fc" id="f-casocomp" placeholder="Caso de cierre"></div>
+        </div>
+      </div>
+      <div class="mdl-step" id="mst4">
+        <div style="text-align:center;padding:16px 0 10px">
+          <div style="font-size:40px;margin-bottom:8px" id="step4-icon">📋</div>
+          <div style="font-size:16px;font-weight:800;margin-bottom:4px" id="step4-msg">Revisión final</div>
+          <div style="font-size:12px;color:var(--txt3)" id="step4-sub">Verifica antes de guardar</div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11.5px" id="step4-summary"></div>
+      </div>
+    </div>
+    <div class="mdl-foot">
+      <button class="btn btn-g" id="btn-prev" onclick="stepNav(-1)" style="display:none">← Anterior</button>
+      <button class="btn btn-p" id="btn-next" onclick="stepNav(1)">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════
+let GH_TOKEN = '', GIST_ID = '';
+let DATA = [], ACTIVITIES = [];
+let editId = null, curStep = 1;
+let tblFiltered = [], tblPage = 1;
+const PER = 15;
+let chartStatus = null, chartMonth = null;
+let calYear = 2026, calMonth = new Date().getMonth();
+
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// ═══════════════════════════════════════
+// GITHUB GIST STORAGE
+// ═══════════════════════════════════════
+async function setupConnect(){
+  const token = document.getElementById('setup-token').value.trim();
+  const gistInput = document.getElementById('setup-gist').value.trim();
+  const errEl = document.getElementById('setup-err');
+  const spinEl = document.getElementById('setup-spin');
+  errEl.style.display='none';
+  if(!token){ errEl.textContent='⚠ Ingresa tu token de GitHub'; errEl.style.display='block'; return; }
+
+  spinEl.style.display='block';
+  document.querySelector('.setup-btn').disabled=true;
+
+  try {
+    if(gistInput){
+      // Load existing gist
+      const res = await fetch(`https://api.github.com/gists/${gistInput}`, {
+        headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github.v3+json' }
+      });
+      if(!res.ok) throw new Error('Gist no encontrado. Verifica el ID.');
+      const gist = await res.json();
+      const content = gist.files['compras_data.json']?.content;
+      if(content){
+        const parsed = JSON.parse(content);
+        DATA = parsed.data || [];
+        ACTIVITIES = parsed.activities || [];
+      }
+      GIST_ID = gistInput;
+    } else {
+      // Create new gist with seed data
+      const seedData = getSeedData();
+      const body = { description:'Compras Gerencia 2026 - Dashboard Data', public:false,
+        files:{ 'compras_data.json':{ content: JSON.stringify({data:seedData, activities:[]}, null, 2) } }
+      };
+      const res = await fetch('https://api.github.com/gists', {
+        method:'POST',
+        headers:{ Authorization:`token ${token}`, Accept:'application/vnd.github.v3+json', 'Content-Type':'application/json' },
+        body: JSON.stringify(body)
+      });
+      if(!res.ok) throw new Error('No se pudo crear el Gist. Verifica que el token tenga permiso "gist".');
+      const gist = await res.json();
+      GIST_ID = gist.id;
+      DATA = seedData;
+      ACTIVITIES = [];
+    }
+
+    GH_TOKEN = token;
+    localStorage.setItem('gh_token', token);
+    localStorage.setItem('gist_id', GIST_ID);
+    launchApp();
+  } catch(e){
+    errEl.textContent = '❌ ' + e.message;
+    errEl.style.display='block';
+  }
+  spinEl.style.display='none';
+  document.querySelector('.setup-btn').disabled=false;
+}
+
+async function saveToGist(){
+  if(!GH_TOKEN || !GIST_ID) return;
+  setSyncStatus('syncing', 'Guardando...');
+  try {
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method:'PATCH',
+      headers:{ Authorization:`token ${GH_TOKEN}`, Accept:'application/vnd.github.v3+json', 'Content-Type':'application/json' },
+      body: JSON.stringify({ files:{ 'compras_data.json':{ content: JSON.stringify({data:DATA, activities:ACTIVITIES}, null, 2) } } })
+    });
+    if(!res.ok) throw new Error('Error al guardar');
+    setSyncStatus('ok', 'Sincronizado ✓');
+  } catch(e){
+    setSyncStatus('error', 'Error al sincronizar');
+  }
+}
+
+function setSyncStatus(state, label){
+  const dot = document.getElementById('sync-dot');
+  document.getElementById('sync-label').textContent = label;
+  dot.className = 'sync-dot' + (state==='syncing'?' syncing': state==='error'?' error':'');
+}
+
+function launchApp(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  // Show gist ID for user to save
+  if(GIST_ID) {
+    const msg = `✅ Conectado!\n\nGuarda este ID de Gist para usarlo la próxima vez:\n\n${GIST_ID}\n\nPégalo en el campo "ID del Gist" cuando vuelvas a ingresar.`;
+    setTimeout(()=> alert(msg), 500);
+  }
+  tblFiltered = [...DATA];
+  renderOverview();
+  renderKanban();
+  renderTable();
+  renderCompletados();
+  renderCalendar();
+}
+
+function getSeedData(){
+  return DATA.length ? DATA : SEED_DATA;
+}
+
+// ═══════════════════════════════════════
+// AUTO-LOGIN
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', ()=>{
+  const t = localStorage.getItem('gh_token');
+  const g = localStorage.getItem('gist_id');
+  if(t && g){
+    document.getElementById('setup-token').value = t;
+    document.getElementById('setup-gist').value = g;
+    GH_TOKEN = t; GIST_ID = g;
+    // Load data from gist silently
+    fetch(`https://api.github.com/gists/${g}`, {
+      headers:{ Authorization:`token ${t}`, Accept:'application/vnd.github.v3+json' }
+    }).then(r=>r.json()).then(gist=>{
+      const content = gist.files['compras_data.json']?.content;
+      if(content){ const p=JSON.parse(content); DATA=p.data||[]; ACTIVITIES=p.activities||[]; }
+      tblFiltered=[...DATA];
+      launchApp();
+      document.getElementById('setup-screen').style.display='none';
+    }).catch(()=>{ DATA=SEED_DATA; tblFiltered=[...DATA]; launchApp(); });
+  }
+  // Set default act date
+  document.getElementById('act-date').value = new Date().toISOString().split('T')[0];
+});
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function goTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');p.classList.add('hidden')});
+  el.classList.add('on');
+  const pg = document.getElementById('pg-'+id);
+  pg.classList.remove('hidden'); pg.classList.add('on');
+  if(id==='overview') renderOverview();
+  if(id==='kanban') renderKanban();
+  if(id==='table'){ tblFiltered=[...DATA]; tblPage=1; renderTable(); }
+  if(id==='completados') renderCompletados();
+  if(id==='calendar') renderCalendar();
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+const SM = {
+  'URGENTE':              {dot:'#e8455a', cls:'t-red'},
+  'RETENIDO-PRESUPUESTO': {dot:'#d4a835', cls:'t-yel'},
+  'PENDIENTE':            {dot:'#e8823a', cls:'t-ora'},
+  'EN PROCESO':           {dot:'#5b8dee', cls:'t-blu'},
+  'COMPLETADO':           {dot:'#2ec27e', cls:'t-grn'},
+  'NUEVO':                {dot:'#4a5480', cls:'t-gry'},
+};
+const PM = {'URGENTE':'t-red','ALTA':'t-ora','MEDIA':'t-yel','BAJA':'t-gry'};
+const stag = s => { const m=SM[s]||SM['NUEVO']; return `<span class="tag ${m.cls}">${s}</span>`; };
+const ptag = p => `<span class="tag ${PM[p]||'t-gry'}">${p}</span>`;
+const fmtVal = v => v ? '$'+Number(v).toLocaleString('es-CO') : '—';
+const daysSince = f => Math.floor((new Date()-new Date(f))/86400000);
+
+// ═══════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════
+function renderOverview(){
+  const cnt = s => DATA.filter(d=>d.estado===s).length;
+  document.getElementById('k-total').textContent = DATA.length;
+  document.getElementById('k-urg').textContent   = cnt('URGENTE');
+  document.getElementById('k-ret').textContent   = cnt('RETENIDO-PRESUPUESTO');
+  document.getElementById('k-pen').textContent   = cnt('PENDIENTE');
+  document.getElementById('k-pro').textContent   = cnt('EN PROCESO');
+  document.getElementById('k-done').textContent  = cnt('COMPLETADO');
+  renderAlerts();
+  renderCharts();
+}
+
+function renderAlerts(){
+  const items = [
+    ...DATA.filter(d=>d.estado==='URGENTE'),
+    ...DATA.filter(d=>d.estado==='RETENIDO-PRESUPUESTO'),
+    ...DATA.filter(d=>d.estado==='PENDIENTE' && daysSince(d.fecha)>14)
+  ];
+  const uniq = [...new Map(items.map(x=>[x.id,x])).values()];
+  document.getElementById('al-cnt').textContent = uniq.length;
+  const el = document.getElementById('al-list');
+  if(!uniq.length){ el.innerHTML=`<div class="empty"><div class="empty-i">✅</div>Sin alertas activas</div>`; return; }
+  el.innerHTML = uniq.map(d=>{
+    const isUrg = d.estado==='URGENTE';
+    const isRet = d.estado==='RETENIDO-PRESUPUESTO';
+    const cls = (isUrg)?'':(isRet)?'warn':'warn';
+    const days = daysSince(d.fecha);
+    return `<div class="al ${cls}" onclick="openEdit(${d.id})">
+      <div class="al-pulse"></div>
+      <div class="al-body">
+        <div class="al-title">${d.descripcion.substring(0,70)}</div>
+        <div class="al-meta">${d.solped||''} · ${(d.proveedor||'').substring(0,35)} · ${d.fecha}</div>
+      </div>
+      <div class="al-right">
+        <div class="al-days">hace ${days}d</div>
+        <button class="edit-btn" onclick="event.stopPropagation();openEdit(${d.id})">✏ Editar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const statusLabels=['URGENTE','RETENIDO-PRESUPUESTO','PENDIENTE','EN PROCESO','COMPLETADO'];
+  const statusColors=['#e8455a','#d4a835','#e8823a','#5b8dee','#2ec27e'];
+  const statusData=statusLabels.map(s=>DATA.filter(d=>d.estado===s).length);
+  const mLabels=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const mData=Array.from({length:12},(_,i)=>DATA.filter(d=>new Date(d.fecha).getMonth()===i).length);
+  const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8892b8',font:{family:'JetBrains Mono',size:10}}}}};
+  if(chartStatus) chartStatus.destroy();
+  chartStatus=new Chart(document.getElementById('ch-status'),{type:'doughnut',data:{labels:statusLabels,datasets:[{data:statusData,backgroundColor:statusColors,borderWidth:2,borderColor:'#0f1320'}]},options:{...base,plugins:{...base.plugins,legend:{position:'right',labels:{color:'#8892b8',font:{size:10}}}}}});
+  if(chartMonth) chartMonth.destroy();
+  chartMonth=new Chart(document.getElementById('ch-month'),{type:'bar',data:{labels:mLabels,datasets:[{label:'Solicitudes',data:mData,backgroundColor:'rgba(91,141,238,.6)',borderColor:'#5b8dee',borderWidth:1,borderRadius:4}]},options:{...base,plugins:{...base.plugins,legend:{display:false}},scales:{x:{ticks:{color:'#8892b8',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#8892b8',font:{size:9}},grid:{color:'rgba(255,255,255,.06)'}}}}});
+}
+
+// ═══════════════════════════════════════
+// KANBAN
+// ═══════════════════════════════════════
+function renderKanban(){
+  const q=document.getElementById('kb-q').value.toLowerCase();
+  const pri=document.getElementById('kb-pri').value;
+  const d=DATA.filter(x=>(!q||x.descripcion.toLowerCase().includes(q)||x.proveedor.toLowerCase().includes(q))&&(!pri||x.prioridad===pri));
+  const cols=[
+    {key:'URGENTE',label:'Urgente',dot:'#e8455a'},
+    {key:'RETENIDO-PRESUPUESTO',label:'Retenido Ppto',dot:'#d4a835'},
+    {key:'PENDIENTE',label:'Pendiente',dot:'#e8823a'},
+    {key:'EN PROCESO',label:'En Proceso',dot:'#5b8dee'},
+    {key:'COMPLETADO',label:'Completado',dot:'#2ec27e'},
+  ];
+  document.getElementById('kb-board').innerHTML=cols.map(col=>{
+    const items=d.filter(x=>x.estado===col.key);
+    return `<div class="kb-col">
+      <div class="kb-head"><div class="kb-dot" style="background:${col.dot}"></div><div class="kb-ttl">${col.label}</div><div class="kb-cnt">${items.length}</div></div>
+      <div class="kb-body">${items.length?items.map(x=>`<div class="kb-card" onclick="openEdit(${x.id})">
+        <div class="kb-card-title">${x.descripcion.substring(0,60)}</div>
+        <div class="kb-card-meta">${ptag(x.prioridad)}<span class="tag t-gry">${x.fecha}</span>${x.pedido?'<span class="tag t-blu">PEDIDO✓</span>':''}${x.valor?`<span class="tag t-gry">${fmtVal(x.valor)}</span>`:''}</div>
+      </div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--txt3);font-size:11px">Sin registros</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// TABLE
+// ═══════════════════════════════════════
+function filterTable(){
+  const q=document.getElementById('tq').value.toLowerCase();
+  const est=document.getElementById('t-est').value;
+  const pri=document.getElementById('t-pri').value;
+  tblFiltered=DATA.filter(d=>{
+    const okq=!q||d.descripcion.toLowerCase().includes(q)||(d.proveedor||'').toLowerCase().includes(q)||(d.solped||'').includes(q);
+    return okq&&(!est||d.estado===est)&&(!pri||d.prioridad===pri);
+  });
+  tblPage=1; renderTable();
+}
+function clearTbl(){['tq','t-est','t-pri'].forEach(id=>document.getElementById(id).value='');filterTable();}
+function renderTable(){
+  const start=(tblPage-1)*PER,end=start+PER,slice=tblFiltered.slice(start,end);
+  document.getElementById('tbl-body').innerHTML=slice.map((d,i)=>`<tr onclick="openEdit(${d.id})">
+    <td class="mono" style="color:var(--txt3)">${start+i+1}</td>
+    <td class="mono" style="color:var(--txt2)">${d.fecha}</td>
+    <td class="mono" style="color:var(--txt3)">${d.solped||'—'}</td>
+    <td class="td-desc">${d.descripcion}</td>
+    <td style="color:var(--txt2)">${(d.proveedor||'').substring(0,28)}</td>
+    <td>${ptag(d.prioridad)}</td>
+    <td>${stag(d.estado)}</td>
+    <td class="mono" style="color:var(--txt3)">${d.pedido||'—'}</td>
+    <td class="td-act" onclick="event.stopPropagation()">
+      <button class="ic-btn" onclick="openEdit(${d.id})" title="Editar">✏</button>
+      <button class="ic-btn" onclick="deleteRow(${d.id})" title="Eliminar" style="color:var(--red2)">🗑</button>
+    </td>
+  </tr>`).join('');
+  const total=tblFiltered.length,pages=Math.ceil(total/PER);
+  document.getElementById('pag-info').textContent=`${Math.min(start+1,total)}–${Math.min(end,total)} de ${total}`;
+  document.getElementById('pag-btns').innerHTML=Array.from({length:pages},(_,i)=>`<button class="pg ${i+1===tblPage?'on':''}" onclick="tblPage=${i+1};renderTable()">${i+1}</button>`).join('');
+}
+
+// ═══════════════════════════════════════
+// COMPLETADOS (ordenados por fecha)
+// ═══════════════════════════════════════
+function renderCompletados(){
+  const q=(document.getElementById('dq').value||'').toLowerCase();
+  const mes=document.getElementById('d-mes').value;
+  let done=DATA.filter(d=>d.estado==='COMPLETADO');
+  if(q) done=done.filter(d=>d.descripcion.toLowerCase().includes(q)||(d.proveedor||'').toLowerCase().includes(q));
+  if(mes) done=done.filter(d=>d.fecha.split('-')[1]===mes);
+  // Sort ascending by date
+  done.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  document.getElementById('done-total').textContent=done.length;
+
+  // Group by month
+  const byMonth={};
+  done.forEach(d=>{
+    const key=d.fecha.substring(0,7);
+    if(!byMonth[key]) byMonth[key]=[];
+    byMonth[key].push(d);
+  });
+
+  const html=Object.keys(byMonth).map(key=>{
+    const [y,m]=key.split('-');
+    const monthName=MONTHS[parseInt(m)-1]+' '+y;
+    const items=byMonth[key];
+    const totalVal=items.reduce((s,d)=>s+(d.valor||0),0);
+    return `<div class="month-group">
+      <div class="month-title">
+        📅 ${monthName}
+        <span class="month-count">${items.length} solicitudes</span>
+        ${totalVal?`<span class="tag t-grn" style="margin-left:4px">${fmtVal(totalVal)}</span>`:''}
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Fecha</th><th>SOLPED</th><th>Descripción</th><th>Proveedor</th><th>Pedido</th><th>EM</th><th>Valor</th><th>Acciones</th></tr></thead>
+          <tbody>${items.map((d,i)=>`<tr onclick="openEdit(${d.id})">
+            <td class="mono" style="color:var(--txt3)">${i+1}</td>
+            <td class="mono" style="color:var(--grn2)">${d.fecha}</td>
+            <td class="mono" style="color:var(--txt3)">${d.solped||'—'}</td>
+            <td class="td-desc">${d.descripcion}</td>
+            <td style="color:var(--txt2)">${(d.proveedor||'').substring(0,28)}</td>
+            <td class="mono" style="color:var(--txt3)">${d.pedido||'—'}</td>
+            <td class="mono" style="color:var(--txt3)">${d.em||'—'}</td>
+            <td class="mono" style="color:var(--grn2)">${fmtVal(d.valor)}</td>
+            <td onclick="event.stopPropagation()"><button class="ic-btn" onclick="openEdit(${d.id})">✏</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('completados-list').innerHTML = html || `<div class="empty"><div class="empty-i">📭</div>No hay completados con ese filtro</div>`;
+}
+
+function exportCompletados(){
+  const q=(document.getElementById('dq').value||'').toLowerCase();
+  const mes=document.getElementById('d-mes').value;
+  let done=DATA.filter(d=>d.estado==='COMPLETADO');
+  if(q) done=done.filter(d=>d.descripcion.toLowerCase().includes(q)||(d.proveedor||'').toLowerCase().includes(q));
+  if(mes) done=done.filter(d=>d.fecha.split('-')[1]===mes);
+  done.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+
+  const rows=[['FECHA','SOLPED','DESCRIPCIÓN / COMPRA','PROVEEDOR','# CASO MESA','PEDIDO','EM 1','EM 2','VALOR','CARPETA','OBSERVACIÓN']];
+  done.forEach(d=>rows.push([d.fecha,d.solped,d.descripcion,d.proveedor,d.caso_mesa,d.pedido,d.em,d.em2||'',d.valor||0,d.carpeta,d.obs]));
+
+  // Totals row
+  const totalVal=done.reduce((s,d)=>s+(d.valor||0),0);
+  rows.push(['','','','','','','','','TOTAL →',totalVal,'']);
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  // Column widths
+  ws['!cols']=[{wch:12},{wch:14},{wch:55},{wch:35},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16},{wch:16},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,'Completados 2026');
+  const mesNombre = mes ? MONTHS[parseInt(mes)-1] : 'Todos';
+  XLSX.writeFile(wb,`Compras_Completados_${mesNombre}_2026.xlsx`);
+}
+
+// ═══════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════
+function renderCalendar(){
+  document.getElementById('cal-ttl').textContent=`${MONTHS[calMonth]} ${calYear}`;
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  const byDate={};
+  DATA.forEach(d=>{
+    if(!byDate[d.fecha]) byDate[d.fecha]=[];
+    byDate[d.fecha].push({text:d.descripcion.substring(0,20),cls:d.estado==='URGENTE'?'cev-urg':d.estado==='COMPLETADO'?'cev-done':d.estado==='EN PROCESO'?'cev-pro':'cev-pen',id:d.id});
+  });
+  ACTIVITIES.forEach(a=>{
+    if(!byDate[a.date]) byDate[a.date]=[];
+    byDate[a.date].push({text:a.title.substring(0,20),cls:a.type==='urg'?'cev-urg':a.type==='cust'?'cev-cust':'cev-task'});
+  });
+  const dayNames=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  let html=dayNames.map(d=>`<div class="cal-dn">${d}</div>`).join('');
+  for(let i=0;i<first;i++) html+=`<div class="cal-day other"></div>`;
+  for(let d=1;d<=days;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isTod=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const evs=byDate[ds]||[];
+    const hasUrg=evs.some(e=>e.cls==='cev-urg');
+    const shown=evs.slice(0,2), more=evs.length-2;
+    html+=`<div class="cal-day ${isTod?'today':''} ${hasUrg?'has-urgent':''}" onclick="calDayClick('${ds}')">
+      <div class="cal-num">${d}</div>
+      <div class="cal-evts">
+        ${shown.map(e=>`<div class="cev ${e.cls}" ${e.id?`onclick="event.stopPropagation();openEdit(${e.id})"`:''}>${e.text}</div>`).join('')}
+        ${more>0?`<div class="cal-more">+${more} más</div>`:''}
+      </div>
+    </div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  const now=new Date();
+  const upcoming=[
+    ...DATA.filter(d=>d.estado!=='COMPLETADO'&&new Date(d.fecha)>=now).map(d=>({date:d.fecha,text:d.descripcion,type:d.estado})),
+    ...ACTIVITIES.filter(a=>new Date(a.date)>=now).map(a=>({date:a.date,text:a.title,type:a.type}))
+  ].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+  document.getElementById('upcoming').innerHTML=upcoming.length
+    ?upcoming.map(u=>`<div class="up-item"><div class="up-date">${u.date}</div><div><div class="up-txt">${u.text}</div><div class="up-type">${u.type}</div></div></div>`).join('')
+    :'<div style="color:var(--txt3);font-size:11px">Sin eventos próximos</div>';
+}
+function calNav(d){calMonth+=d;if(calMonth<0){calMonth=11;calYear--;}if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function calDayClick(date){document.getElementById('act-date').value=date;}
+function addActivity(){
+  const title=document.getElementById('act-ttl').value.trim();
+  const date=document.getElementById('act-date').value;
+  const type=document.getElementById('act-type').value;
+  if(!title||!date){alert('Completa título y fecha');return;}
+  ACTIVITIES.push({id:Date.now(),title,date,type});
+  saveToGist();
+  document.getElementById('act-ttl').value='';
+  renderCalendar();
+}
+
+// ═══════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════
+function openNew(){
+  editId=null;curStep=1;
+  document.getElementById('mdl-ttl').textContent='Nueva Solicitud';
+  ['f-fecha','f-solped','f-desc','f-prov','f-caso','f-valor','f-obs','f-pedido','f-em1','f-em2','f-carpeta','f-casocomp'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('f-pri').value='MEDIA';
+  document.getElementById('f-est').value='PENDIENTE';
+  document.getElementById('f-fecha').value=new Date().toISOString().split('T')[0];
+  showStep(1);
+  document.getElementById('mdl-sol').classList.add('open');
+}
+function openEdit(id){
+  const d=DATA.find(x=>x.id===id);if(!d)return;
+  editId=id;
+  document.getElementById('mdl-ttl').textContent='Editar Solicitud';
+  document.getElementById('f-fecha').value=d.fecha||'';
+  document.getElementById('f-solped').value=d.solped||'';
+  document.getElementById('f-desc').value=d.descripcion||'';
+  document.getElementById('f-prov').value=d.proveedor||'';
+  document.getElementById('f-caso').value=d.caso_mesa||'';
+  document.getElementById('f-pri').value=d.prioridad||'MEDIA';
+  document.getElementById('f-est').value=d.estado||'PENDIENTE';
+  document.getElementById('f-valor').value=d.valor||'';
+  document.getElementById('f-obs').value=d.obs||'';
+  document.getElementById('f-pedido').value=d.pedido||'';
+  document.getElementById('f-em1').value=d.em||'';
+  document.getElementById('f-em2').value=d.em2||'';
+  document.getElementById('f-carpeta').value=d.carpeta||'';
+  curStep = d.estado==='COMPLETADO'?4:d.pedido?3:2;
+  showStep(curStep);
+  document.getElementById('mdl-sol').classList.add('open');
+}
+function closeModal(){document.getElementById('mdl-sol').classList.remove('open');editId=null;}
+function showStep(s){
+  for(let i=1;i<=4;i++){
+    document.getElementById('mst'+i).className='mdl-step'+(i===s?' on':'');
+    const si=document.getElementById('si'+i);
+    si.className='ps'+(i<s?' done':i===s?' act':'');
+    if(i<4){const sl=document.getElementById('sl'+i);if(sl)sl.className='ps-line'+(i<s?' done':'');}
+  }
+  document.getElementById('btn-prev').style.display=s>1?'':'none';
+  document.getElementById('btn-next').textContent=s===4?'💾 Guardar':'Siguiente →';
+  if(s===4) buildSummary();
+}
+function stepNav(dir){
+  const ns=curStep+dir;
+  if(ns<1)return;
+  if(ns>4){saveSolicitud();return;}
+  curStep=ns; showStep(curStep);
+}
+function buildSummary(){
+  const fields=[
+    ['Fecha',document.getElementById('f-fecha').value],
+    ['SOLPED',document.getElementById('f-solped').value],
+    ['Descripción',document.getElementById('f-desc').value.substring(0,50)],
+    ['Proveedor',document.getElementById('f-prov').value.substring(0,30)],
+    ['Prioridad',document.getElementById('f-pri').value],
+    ['Estado',document.getElementById('f-est').value],
+    ['Valor',fmtVal(+document.getElementById('f-valor').value||0)],
+    ['Pedido',document.getElementById('f-pedido').value||'—'],
+  ];
+  const est=document.getElementById('f-est').value;
+  document.getElementById('step4-icon').textContent=est==='COMPLETADO'?'✅':'📋';
+  document.getElementById('step4-msg').textContent=est==='COMPLETADO'?'¡Caso completado!':'Revisar y guardar';
+  document.getElementById('step4-sub').textContent=est==='COMPLETADO'?'Cierre registrado correctamente':'Verifica la información antes de guardar';
+  document.getElementById('step4-summary').innerHTML=fields.map(([k,v])=>`<div><span style="color:var(--txt3);font-size:10px">${k}</span><br><span style="font-weight:600;font-size:12px">${v||'—'}</span></div>`).join('');
+}
+function saveSolicitud(){
+  const d={
+    id: editId||(DATA.length?Math.max(...DATA.map(x=>x.id))+1:1),
+    fecha:document.getElementById('f-fecha').value,
+    solped:document.getElementById('f-solped').value,
+    descripcion:document.getElementById('f-desc').value,
+    proveedor:document.getElementById('f-prov').value,
+    caso_mesa:document.getElementById('f-caso').value,
+    prioridad:document.getElementById('f-pri').value,
+    estado:document.getElementById('f-est').value,
+    valor:+document.getElementById('f-valor').value||0,
+    obs:document.getElementById('f-obs').value,
+    pedido:document.getElementById('f-pedido').value,
+    em:document.getElementById('f-em1').value,
+    em2:document.getElementById('f-em2').value,
+    carpeta:document.getElementById('f-carpeta').value,
+  };
+  if(editId){const i=DATA.findIndex(x=>x.id===editId);DATA[i]=d;}
+  else DATA.push(d);
+  saveToGist();
+  closeModal();
+  tblFiltered=[...DATA];
+  renderOverview(); renderKanban(); renderTable(); renderCompletados(); renderCalendar();
+}
+function deleteRow(id){
+  if(!confirm('¿Eliminar esta solicitud?'))return;
+  DATA=DATA.filter(x=>x.id!==id);
+  saveToGist();
+  tblFiltered=[...DATA]; renderTable(); renderOverview();
+}
+document.getElementById('mdl-sol').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// ═══════════════════════════════════════
+// EXCEL IMPORT
+// ═══════════════════════════════════════
+function loadExcel(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets['COMPRAS GERENCIA']||wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+    const newData=[];
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];const rawDate=r[0];let fecha='';
+      if(rawDate){let d=typeof rawDate==='number'?new Date((rawDate-25569)*86400000):new Date(rawDate);
+        if(!isNaN(d)){if(d.getFullYear()!==2026)continue;fecha=d.toISOString().split('T')[0];}else continue;
+      }else continue;
+      const pedido=r[6]?String(r[6]):'',em1=r[8]?String(r[8]):'';
+      const obs=String(r[12]||'').toUpperCase(),compra=String(r[2]||'').toUpperCase();
+      let estado='PENDIENTE',prioridad='MEDIA';
+      if(obs.includes('URGENTE')||compra.includes('URGENTE')){estado='URGENTE';prioridad='URGENTE';}
+      else if(obs.includes('PRESUPUESTO')||obs.includes('RETENIDO')){estado='RETENIDO-PRESUPUESTO';prioridad='ALTA';}
+      else if(em1){estado='COMPLETADO';prioridad='BAJA';}
+      else if(pedido){estado='EN PROCESO';prioridad='MEDIA';}
+      const vs=String(r[7]||'').replace(/[^0-9]/g,'');
+      newData.push({id:newData.length+1,fecha,solped:String(r[1]||''),descripcion:String(r[2]||'').substring(0,150).replace(/\n/g,' '),proveedor:String(r[3]||'').substring(0,80).replace(/\n/g,' '),caso_mesa:String(r[4]||''),pedido,valor:parseInt(vs)||0,em:em1,em2:'',obs:String(r[12]||''),estado,prioridad,carpeta:String(r[13]||'')});
+    }
+    if(newData.length){DATA=newData;saveToGist();tblFiltered=[...DATA];renderOverview();renderKanban();renderTable();renderCompletados();renderCalendar();alert(`✅ ${newData.length} registros 2026 cargados y guardados en la nube.`);}
+    else alert('No se encontraron registros de 2026.');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ═══════════════════════════════════════
+// SEED DATA (datos reales del Excel)
+// ═══════════════════════════════════════
+const SEED_DATA = [{"id": 1, "fecha": "2026-01-02", "solped": "1000022639", "descripcion": "PLAN DIGITAL POSGRADOS", "proveedor": "FLUVIP", "caso_mesa": "72584", "pedido": "4000021801", "valor": 27370000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 2, "fecha": "2026-01-06", "solped": "1000022661", "descripcion": "LANZAMIENTO EAN VIRTUAL", "proveedor": "", "caso_mesa": "72582", "pedido": "4000021813", "valor": 28469798, "em": "5000087494", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 3, "fecha": "2026-01-09", "solped": "1000022648", "descripcion": "LICENCIAS CAPCUT", "proveedor": "", "caso_mesa": "72721", "pedido": "4000021815", "valor": 1399800, "em": "5000088306", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 4, "fecha": "2026-01-13", "solped": "1000022690", "descripcion": "MANILLAS Y PALETAS SEÑALETICA EVENTOS PRE Y POST", "proveedor": "AFÁN GRAFICO", "caso_mesa": "72782", "pedido": "4000021814", "valor": 684250, "em": "5000087299", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 5, "fecha": "2026-01-15", "solped": "1000022674", "descripcion": "REFRIGERIOS EVENTO EXPO POSGRADOS EAN", "proveedor": "KABOD", "caso_mesa": "72953", "pedido": "4000021847", "valor": 699960, "em": "5000087490", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 6, "fecha": "2026-01-15", "solped": "1000022675", "descripcion": "CLICS SEGMENTADOS EAN - LENGUAS MODERNAS", "proveedor": "EL TIEMPO", "caso_mesa": "72912", "pedido": "4000021828", "valor": 3570000, "em": "5000087532", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 7, "fecha": "2026-01-15", "solped": "1000022676", "descripcion": "CLICS SEGEMENTADOS EAN- INGENIERIA", "proveedor": "EL TIEMPO", "caso_mesa": "72913", "pedido": "4000021828", "valor": 3570000, "em": "5000087533", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 8, "fecha": "2026-01-15", "solped": "1000022677", "descripcion": "VALLA CALLE 120", "proveedor": "MARKET MEDIOS", "caso_mesa": "73132", "pedido": "4000021849", "valor": 19040000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 9, "fecha": "2026-01-19", "solped": "1000022725", "descripcion": "REFRIGERIOS BRUNCH PREGRADO", "proveedor": "FOCACCIA", "caso_mesa": "", "pedido": "", "valor": 3100000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 10, "fecha": "2026-01-19", "solped": "1000022703", "descripcion": "CONTRATACIÓN JUAN PABLO LLINÁS BOOTCAMP IA", "proveedor": "JUAN PABLO LLINAS", "caso_mesa": "", "pedido": "", "valor": 3456000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 11, "fecha": "2026-01-19", "solped": "1000022686", "descripcion": "CONTRATACIÓN LOGISTICA BOOTCAMP IA", "proveedor": "NICOLS", "caso_mesa": "", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 12, "fecha": "2026-01-19", "solped": "1000022724", "descripcion": "MORRALES LENOVO", "proveedor": "PROVOEXPRESS", "caso_mesa": "70103", "pedido": "4000021881", "valor": 10234000, "em": "5000088216", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 13, "fecha": "2026-01-20", "solped": "1000022728", "descripcion": "ALIMENTACIÓN JORNADA DE BIENVENIDA", "proveedor": "GRUPO PROMO", "caso_mesa": "73145", "pedido": "4000021831", "valor": 34954000, "em": "5000087406", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 14, "fecha": "2026-01-20", "solped": "1000022729", "descripcion": "SKETCH TEATRAL JORNADA DE BIENVENIDA", "proveedor": "ARTES DIVERSAS", "caso_mesa": "73187", "pedido": "4000021844", "valor": 6200000, "em": "5000087475", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 15, "fecha": "2026-01-20", "solped": "1000022730", "descripcion": "IMPLEMENTOS ACTIVIDADES JORNADA DE BIENVENIDA", "proveedor": "SANTAELLA", "caso_mesa": "73192", "pedido": "COMITÉ", "valor": 45719800, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 16, "fecha": "2026-01-20", "solped": "1000022711", "descripcion": "CHOCOLATES  ALINEACIÓN ESTRATEGICA PROFESORES", "proveedor": "KAOXUE CHOCCOLATES", "caso_mesa": "73163", "pedido": "4000021834", "valor": 733086, "em": "5000087472", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 17, "fecha": "2026-01-20", "solped": "1000022689", "descripcion": "PASABOCAS ALINEACIÓN ESTRATEGICA PROFESORES", "proveedor": "KABOD", "caso_mesa": "73175", "pedido": "4000021841", "valor": 5120000, "em": "5000087471", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 18, "fecha": "2026-01-20", "solped": "1000022740", "descripcion": "MATERIALES DE PAPELERIA ALINEACIÓN ESTRATEGICA PROFESORES", "proveedor": "KPULUS", "caso_mesa": "73188", "pedido": "4000021846", "valor": 5056475, "em": "5000087491", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 19, "fecha": "2026-01-19", "solped": "1000022734", "descripcion": "PUBLIREPORTAJE", "proveedor": "EL TIEMPO", "caso_mesa": "73511", "pedido": "4000021886", "valor": 15374800, "em": "5000087497", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 20, "fecha": "2026-01-22", "solped": "1000022736", "descripcion": "CUSTOMER EXPERIENCE SUMMIT", "proveedor": "ASOCIACIÓN COLOMBIANA DE BPO", "caso_mesa": "73514", "pedido": "4000021907", "valor": 17850000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 21, "fecha": "2026-01-22", "solped": "1000022735", "descripcion": "TARJETAS RECARGAS", "proveedor": "BIG PASS", "caso_mesa": "73374", "pedido": "4000021899", "valor": 22843852, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 22, "fecha": "2026-01-22", "solped": "1000022737", "descripcion": "GASTOS REPRESENTACIÓN", "proveedor": "MISTRAL", "caso_mesa": "73517", "pedido": "4000021883", "valor": 84239, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 23, "fecha": "2026-01-22", "solped": "1000022738", "descripcion": "GASTOS REPRESENTACION", "proveedor": "MISTRAL", "caso_mesa": "73518", "pedido": "4000021884", "valor": 23100, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 24, "fecha": "2026-01-23", "solped": "1000022751", "descripcion": "ACTUALIZACIÓN RUP", "proveedor": "CAMARA DE COMERCIO BOGOTA", "caso_mesa": "", "pedido": "4000021937", "valor": 444000, "em": "5000087773", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 25, "fecha": "2026-01-23", "solped": "1000022752", "descripcion": "PASABOCAS DOCENTES JORNADAS DE BIENVENIDA", "proveedor": "GRUPO PROMO", "caso_mesa": "760088", "pedido": "", "valor": 19936600, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 26, "fecha": "2026-01-27", "solped": "1000022781", "descripcion": "AMBULANCIA Y LOGISTICA EVENTO SALUD", "proveedor": "ADVANTAGE", "caso_mesa": "73872", "pedido": "4000021926", "valor": 2117010, "em": "5000087963", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 27, "fecha": "2026-01-27", "solped": "1000022773", "descripcion": "CAMISETAS PROMOTORES", "proveedor": "AFÁN GRÁFICO", "caso_mesa": "73563", "pedido": "4000021904", "valor": 1785000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 28, "fecha": "2026-01-27", "solped": "1000022771", "descripcion": "BONOS BIENESTAR UNIVERSITARIO INDUCCIONES", "proveedor": "ALKOSTO", "caso_mesa": "75379", "pedido": "4000022186", "valor": 1000000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 29, "fecha": "2026-01-27", "solped": "COMPRA INTER", "descripcion": "LINEA CLARO", "proveedor": "COMPRA INTERNA PLANTA FISICA", "caso_mesa": "ID 469", "pedido": "", "valor": 558000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 30, "fecha": "2026-01-27", "solped": "1000022749", "descripcion": "EVENTS SPRING 2026", "proveedor": "QS QUACQUARELLI SYMONDS LIMITED", "caso_mesa": "73662", "pedido": "4000021896", "valor": 3275, "em": "5000088152", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 31, "fecha": "2026-01-27", "solped": "1000022780", "descripcion": "BENEFICIARIOS CANJE RCN TV-UEAN I-26", "proveedor": "RCN TV", "caso_mesa": "73665", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 32, "fecha": "2026-01-28", "solped": "1000022776", "descripcion": "BONOS", "proveedor": "ALKOSTO", "caso_mesa": "73860", "pedido": "4000021963", "valor": 4500000, "em": "5000088260", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 33, "fecha": "2026-01-27", "solped": "1000022782", "descripcion": "BIZ FEZT MEDELLÍN - CALI- BOGOTA", "proveedor": "THE BIZ NATION", "caso_mesa": "73729", "pedido": "COMITÉ", "valor": 75000000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 34, "fecha": "2026-01-28", "solped": "1000022785", "descripcion": "MANILLAS EVENTOS", "proveedor": "MARKETING Y CREATIVIDAD", "caso_mesa": "73693", "pedido": "4000021922", "valor": 3917361, "em": "5000088219", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 35, "fecha": "2026-01-28", "solped": "1000022801", "descripcion": "PARTICIPACIÓN EXPOMALOCAS", "proveedor": "EXPOMALOCAS", "caso_mesa": "73798", "pedido": "4000021920", "valor": 9520000, "em": "5000087530", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 36, "fecha": "2026-01-28", "solped": "1000022800", "descripcion": "PAUTA ESPECIAL EN 115 AÑOS", "proveedor": "EL TIEMPO", "caso_mesa": "73799", "pedido": "4000021919", "valor": 33320000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 37, "fecha": "2026-01-28", "solped": "1000022777", "descripcion": "RCN RADIO CANJE", "proveedor": "RCN RADIO", "caso_mesa": "73823", "pedido": "4000021906", "valor": 33367199, "em": "5000087531", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 38, "fecha": "2026-01-29", "solped": "1000022789", "descripcion": "GESTIÓN DE LEADS", "proveedor": "CURSOS Y CARRERAS", "caso_mesa": "73824", "pedido": "4000021994", "valor": 3300, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 39, "fecha": "2026-01-29", "solped": "1000022805", "descripcion": "PARTICIPACIÓN EN EVENTO GRAN FORO COLOMBIA", "proveedor": "REVISTA SEMANA", "caso_mesa": "73855", "pedido": "4000021935", "valor": 11900000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 40, "fecha": "2026-01-29", "solped": "1000022820", "descripcion": "CLICS SEGMENTADOS EAN- MBA", "proveedor": "EL TIEMPO", "caso_mesa": "73818", "pedido": "4000021924", "valor": 3570000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 41, "fecha": "2026-02-02", "solped": "1000022814", "descripcion": "DESAYUNO  LIDERES EMPRESAS PUBLICAS FEB 4", "proveedor": "KABOD", "caso_mesa": "74003", "pedido": "4000021944", "valor": 950000, "em": "5000088217", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 42, "fecha": "2026-02-02", "solped": "1000022807", "descripcion": "REFRIGERIOS CAPACITACIÓN  CAVE", "proveedor": "REFRESHMENT", "caso_mesa": "73949", "pedido": "4000021934", "valor": 320000, "em": "5000088215", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 43, "fecha": "2026-02-02", "solped": "COMPRA INTERNA", "descripcion": "COMPRA INTERNA PINES", "proveedor": "TIENDA EAN", "caso_mesa": "", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 44, "fecha": "2026-01-02", "solped": "1000022809", "descripcion": "VINILOS ASCENSORES", "proveedor": "KATODE", "caso_mesa": "74031", "pedido": "", "valor": 669642, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 45, "fecha": "2026-02-03", "solped": "1000022850", "descripcion": "BOTARGA MELI", "proveedor": "MAXIMUS PRODUCCIONES", "caso_mesa": "74116", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 46, "fecha": "2026-02-03", "solped": "1000022842", "descripcion": "RCN TV CANJE 2025-1", "proveedor": "RCN TELEVISIÓN", "caso_mesa": "", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 47, "fecha": "2026-02-05", "solped": "COMPRA INTERNA", "descripcion": "LIBROS", "proveedor": "EDITORIAL", "caso_mesa": "", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 48, "fecha": "2026-02-05", "solped": "1000022863", "descripcion": "AUDIOVISUAL Y FOTOGRAFIA", "proveedor": "GEMA AUDIOVISUAL", "caso_mesa": "74832", "pedido": "", "valor": 34000000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 49, "fecha": "2026-02-05", "solped": "1000022864", "descripcion": "BMI EXPOGRADOS - BOG-- MED- BGA", "proveedor": "", "caso_mesa": "75308", "pedido": "4000022132", "valor": 4550, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 50, "fecha": "2026-02-05", "solped": "1000022865", "descripcion": "EMBAJADORES", "proveedor": "ADVOCATES", "caso_mesa": "", "pedido": "4000022075", "valor": 34930000, "em": "5000088214", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 51, "fecha": "2026-02-10", "solped": "1000022907", "descripcion": "CANJE RCN - PAULA SOFIA RAMIREZ", "proveedor": "RCN", "caso_mesa": "74624", "pedido": "4000022032", "valor": 5558400, "em": "5000088305", "obs": "LA CREÓ NATHALIA GARZÓN", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "55", "em2": ""}, {"id": 52, "fecha": "2026-02-10", "solped": "1000022940", "descripcion": "RENOVACION PÓLZIAS ATENEA-432-2024 - 2065662 - 2065663", "proveedor": "POLIZAS LIBERTY - ATENEA", "caso_mesa": "", "pedido": "", "valor": 9249855, "em": "", "obs": "LA CREÓ NATHALIA GARZÓN", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "56", "em2": ""}, {"id": 53, "fecha": "2026-02-12", "solped": "1000022961", "descripcion": "APOYO LOGÍSTICO EVENTO - 12 FEBRERO", "proveedor": "ADVANTAGE PROTOCOLO", "caso_mesa": "74946", "pedido": "4000022106", "valor": 606900, "em": "5000088263", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 54, "fecha": "2026-02-12", "solped": "1000022962", "descripcion": "MATERIAL CAPACITACIÓN DOCENTE LENGUAS MODERNAS", "proveedor": "COMERCIALIZADORA ESAN SAS", "caso_mesa": "74801", "pedido": "", "valor": 240290, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 55, "fecha": "2026-02-12", "solped": "1000022971", "descripcion": "GASTOS DE REPRESENTACIÓN", "proveedor": "LA BOUTIQUE DE LAS CARNES", "caso_mesa": "74824", "pedido": "", "valor": 420102, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 56, "fecha": "2026-02-12", "solped": "1000022972", "descripcion": "GASTOS DE REPRESENTACIÓN", "proveedor": "MISTRAL", "caso_mesa": "74825", "pedido": "", "valor": 171428, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 57, "fecha": "2026-02-12", "solped": "1000022973", "descripcion": "GASTOS DE REPRESENTACIÓN", "proveedor": "LAO KAO SA", "caso_mesa": "74826", "pedido": "", "valor": 355400, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 58, "fecha": "2026-02-16", "solped": "1000022992", "descripcion": "EVENTO ICETEX", "proveedor": "PETUNIA", "caso_mesa": "75014", "pedido": "4000022097", "valor": 2951200, "em": "5000088114", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 59, "fecha": "2026-02-16", "solped": "1000023000", "descripcion": "LATAM HEALTH TECH FORUM 2026 PATROCINIO PLAN PLATA", "proveedor": "HEALTH TECH", "caso_mesa": "75371", "pedido": "", "valor": 15000000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 60, "fecha": "2026-02-16", "solped": "1000022984", "descripcion": "BECAS POR COLOMBIA", "proveedor": "TELECAFÉ", "caso_mesa": "74981", "pedido": "4000022173", "valor": 4539850, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 61, "fecha": "2026-02-16", "solped": "1000022985", "descripcion": "BECAS POR COLOMBIA", "proveedor": "TELEANTIOQUIA", "caso_mesa": "75694", "pedido": "4000022200", "valor": 6130147, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 62, "fecha": "2026-02-16", "solped": "1000022987", "descripcion": "BECAS POR COLOMBIA", "proveedor": "TELEISLAS", "caso_mesa": "74989", "pedido": "", "valor": 2860000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 63, "fecha": "2026-02-16", "solped": "1000022989", "descripcion": "BECAS POR COLOMBIA", "proveedor": "TELECARIBE", "caso_mesa": "74995", "pedido": "4000022230", "valor": 4430370, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 64, "fecha": "2026-02-16", "solped": "1000023011", "descripcion": "BECAS POR COLOMBIA", "proveedor": "CANAL TRO", "caso_mesa": "75004", "pedido": "", "valor": 2225300, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 65, "fecha": "2026-02-16", "solped": "1000023030", "descripcion": "PLAN VALLAS ATL", "proveedor": "MARKET MEDIOS", "caso_mesa": "75032", "pedido": "4700001655", "valor": 118582310, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 66, "fecha": "2026-02-17", "solped": "1000023033", "descripcion": "MANILLAS EVENTOS", "proveedor": "MARKETING Y CREATIVIDAD", "caso_mesa": "75096", "pedido": "", "valor": 1428833, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 67, "fecha": "2026-02-17", "solped": "1000023009", "descripcion": "CATA DOCTORADOS 26 FEB", "proveedor": "CABRERA IMPERIAL", "caso_mesa": "75364", "pedido": "4000022146", "valor": 4665546, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 68, "fecha": "2026-02-17", "solped": "1000023082", "descripcion": "ALIMENTACIÓN EXPO EAN POSGRADOS 21 FEB", "proveedor": "KABOD", "caso_mesa": "75388", "pedido": "4000022126", "valor": 7020650, "em": "5000088354", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 69, "fecha": "2026-02-19", "solped": "1000023053", "descripcion": "MATERIALES EXPO EAN POSGRADOS", "proveedor": "KATODE", "caso_mesa": "75365", "pedido": "4000022125", "valor": 368900, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 70, "fecha": "2026-02-19", "solped": "1000023050", "descripcion": "MATERIAL VIAJE SAI", "proveedor": "COMERCIALIZADORA ESAN", "caso_mesa": "75309", "pedido": "4000022148", "valor": 401030, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 71, "fecha": "2026-02-19", "solped": "1000023051", "descripcion": "ELEMENTOS ESCENOGRAFIA", "proveedor": "SANTAELLA", "caso_mesa": "75314", "pedido": "4000022155", "valor": 7935000, "em": "5000088211", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 72, "fecha": "2026-02-19", "solped": "1000023045", "descripcion": "EMBAJADORES FLUVIP", "proveedor": "FLUVIP", "caso_mesa": "75326", "pedido": "4000022142", "valor": 34930000, "em": "5000088213", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 73, "fecha": "2026-02-19", "solped": "1000023052", "descripcion": "MICROFONOS EXPO EAN", "proveedor": "NEXT PRO", "caso_mesa": "75366", "pedido": "4000022123", "valor": 1190000, "em": "5000088264", "obs": "", "estado": "COMPLETADO", "prioridad": "BAJA", "carpeta": "", "em2": ""}, {"id": 74, "fecha": "2026-02-20", "solped": "1000023058", "descripcion": "LEADS", "proveedor": "EDUPLUS", "caso_mesa": "75856", "pedido": "", "valor": 162000000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 75, "fecha": "2026-02-20", "solped": "1000023083", "descripcion": "TERMOS- 1.000", "proveedor": "AFAN GRAFICO", "caso_mesa": "75409", "pedido": "4000022151", "valor": 15470000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 76, "fecha": "2026-02-20", "solped": "COMPRA INTERNA ", "descripcion": "BUSO Y PINES METALICOS", "proveedor": "TIENDA EAN", "caso_mesa": "489", "pedido": "", "valor": 662000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 77, "fecha": "2026-02-20", "solped": "1000023064", "descripcion": "CHARLAS TEMATICAS COLEGIOS", "proveedor": "ANDREA BERNAL", "caso_mesa": "75428", "pedido": "", "valor": 7800000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 78, "fecha": "2026-02-20", "solped": "1000023077", "descripcion": "CHARLAS TEMATICAS COLEGIOS", "proveedor": "PAOLA VARGAS", "caso_mesa": "75490", "pedido": "4000022220", "valor": 24150000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 79, "fecha": "2026-02-20", "solped": "1000023090", "descripcion": "INTERVENCION ACTUADA EXPO EAN", "proveedor": "FUNDACIÓN TEATRO GOYENECHUS", "caso_mesa": "75456", "pedido": "", "valor": 1500000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 80, "fecha": "2026-02-23", "solped": "1000023095", "descripcion": "DESAYUNO COTERMINALES", "proveedor": "GRUPO PROMO", "caso_mesa": "75533", "pedido": "4000022164", "valor": 1015975, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 81, "fecha": "2026-02-23", "solped": "1000023086", "descripcion": "RECARGA VOCERA LAURA NATALIA VERA", "proveedor": "", "caso_mesa": "75493", "pedido": "", "valor": 25000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 82, "fecha": "2026-02-23", "solped": "1000023093", "descripcion": "PLUMONES LENGUAS MODERNAS", "proveedor": "COMERCIALIZADORA ESAN", "caso_mesa": "75532", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 83, "fecha": "2026-02-23", "solped": "1000023112", "descripcion": "GASTOS REPRESENTACIÓN", "proveedor": "MISTRAL", "caso_mesa": "75579", "pedido": "4000022177", "valor": 120513, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 84, "fecha": "2026-02-23", "solped": "1000023113", "descripcion": "GASTOS REPRESENTACIÓN", "proveedor": "MISTRAL", "caso_mesa": "75580", "pedido": "4000022176", "valor": 300572, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 85, "fecha": "2026-02-24", "solped": "1000023096", "descripcion": "TARJETAS BIG PASS", "proveedor": "BIG PASS", "caso_mesa": "75630", "pedido": "4000022214", "valor": 10943000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 86, "fecha": "2026-02-24", "solped": "1000023118", "descripcion": "POSTRE Y CAFE REUNIÓN FUND TEC NEIVA", "proveedor": "GRUPO PROMO", "caso_mesa": "75666", "pedido": "4000022179", "valor": 287480, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 87, "fecha": "2026-02-24", "solped": "1000023119", "descripcion": "GASTOS REPRESENTACIÓN", "proveedor": "SANALEJO CAFE RESTAURANTE", "caso_mesa": "75717", "pedido": "", "valor": 272383, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 88, "fecha": "2026-02-25", "solped": "1000023078", "descripcion": "ALMUERZO ARMADA", "proveedor": "BOUTIQUE DE LAS CARNES", "caso_mesa": "75711", "pedido": "4000022228", "valor": 768093, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 89, "fecha": "2026-02-25", "solped": "1000023130", "descripcion": "TARJETAS MERCH CATA DOCTORADOS", "proveedor": "KATODE", "caso_mesa": "75752", "pedido": "4000022227", "valor": 60642, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 90, "fecha": "2026-02-26", "solped": "1000023135", "descripcion": "ESFEROS", "proveedor": "PODER PROMOCIONAL", "caso_mesa": "75800", "pedido": "", "valor": 7844612, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 91, "fecha": "2026-02-27", "solped": "1000023156", "descripcion": "RECARGAS BIG PASS VOCEROS", "proveedor": "BIG PASS", "caso_mesa": "75874", "pedido": "4000022250", "valor": 919089, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 92, "fecha": "2026-02-27", "solped": "1000023137", "descripcion": "RECARGA LAURA NATALIA", "proveedor": "BIG PASS", "caso_mesa": "75913", "pedido": "4000022272", "valor": 171383, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 93, "fecha": "2026-02-27", "solped": "1000023125", "descripcion": "TALLER JUAN GUILLERMO BAEZ", "proveedor": "PLURUM", "caso_mesa": "75958", "pedido": "4000022268", "valor": 9401000, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 94, "fecha": "2026-03-02", "solped": "1000023158", "descripcion": "PATROCINIO EMPRESARIO DEL AÑO", "proveedor": "LA REPUBLICA", "caso_mesa": "76223", "pedido": "", "valor": 20000000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 95, "fecha": "2026-03-02", "solped": "1000023102", "descripcion": "ESPECIAL EDUCACIÓN", "proveedor": "SEMANA", "caso_mesa": "", "pedido": "", "valor": 21420000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 96, "fecha": "2026-03-02", "solped": "1000023159", "descripcion": "REFRIGERIOS REUNIÓN IAGORA", "proveedor": "GRUPO PROMO", "caso_mesa": "75999", "pedido": "4000022262", "valor": 258320, "em": "", "obs": "", "estado": "EN PROCESO", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 97, "fecha": "2026-03-03", "solped": "1000023170", "descripcion": "BRANDING EAN A TU LADO", "proveedor": "KATODE", "caso_mesa": "", "pedido": "", "valor": 6273090, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 98, "fecha": "2026-03-03", "solped": "1000023185", "descripcion": "CONTENIDO DIGITAL E IMPRESO", "proveedor": "EL TIEMPO", "caso_mesa": "76208", "pedido": "", "valor": 23800000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 99, "fecha": "2026-03-03", "solped": "1000023173", "descripcion": "GASTO DE REPRESENTACION EL CORRAL", "proveedor": "TARJETA DE CREDITO", "caso_mesa": "76132", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 100, "fecha": "2026-03-03", "solped": "1000023174", "descripcion": "CONGRESO INTERNACIONAL DE CONTRATACIÓN PUBLICA", "proveedor": "", "caso_mesa": "ANTICIPO ", "pedido": "", "valor": 0, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 101, "fecha": "2026-03-03", "solped": "", "descripcion": "PUBLIREPORTAJE IMPRESO+ DIGITAL", "proveedor": "LA REPUBLICA", "caso_mesa": "", "pedido": "", "valor": 19040000, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}, {"id": 102, "fecha": "2026-03-03", "solped": "1000023165", "descripcion": "CAJAS TIPO PILLOW", "proveedor": "AFAN GRAFICO", "caso_mesa": "76221", "pedido": "", "valor": 2713200, "em": "", "obs": "", "estado": "PENDIENTE", "prioridad": "MEDIA", "carpeta": "", "em2": ""}];
+</script>
+</body>
+</html>
